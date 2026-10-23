@@ -38,6 +38,7 @@ Seuls les tickets listés participent : un numéro absent du fichier n'existe pa
 - **Pas de synchronisation entre PC.** Chaque ordinateur garde sa propre copie. On partage le résultat avec le fichier CSV.
 - **Le stockage du navigateur (localStorage) est lié à l'adresse et au navigateur.** Un tirage fait dans Chrome n'apparaît pas dans Firefox, et un tirage fait en `file://` n'apparaît pas sur l'adresse GitHub Pages, et inversement. **Sur un même PC, ne pas mélanger `file://` et l'URL GitHub** : choisir une seule façon d'ouvrir l'app et s'y tenir.
 - Ce stockage peut être vidé (navigation privée, nettoyage du navigateur, autre profil). Rien n'est indestructible : **le CSV exporté est la sauvegarde**.
+- **« Supprimer le résultat »** (onglet Bar, confirmation en tapant EFFACER) efface le tirage de cet ordinateur et garde les lots et achats importés : **il permet donc un nouveau tirage**. Le jour J, ne l'utiliser qu'en cas d'erreur avérée. « Tout effacer » supprime en plus les lots et les achats. Avant le tirage, « Supprimer la liste de lots » et « Supprimer les achats » retirent un import.
 - Aucun suivi de remise dans l'app : la remise se note sur papier.
 - Limite de sécurité : 1 000 000 de tickets au total par import.
 

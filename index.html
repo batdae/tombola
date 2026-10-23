@@ -49,7 +49,6 @@
     background: var(--accent); color: var(--accent-text); cursor: pointer; }
   button.btn.secondary { background: transparent; color: var(--accent); }
   button.btn.danger { background: #b3261e; border-color: #b3261e; color: #fff; }
-  button.btn.discreet { background: transparent; border-color: var(--border); color: var(--muted); font-weight: 400; font-size: .9rem; }
   button.btn:disabled { opacity: .4; cursor: not-allowed; }
   .btn-huge { font-size: 2rem !important; padding: 1.2rem 2.5rem !important; }
   .msg { border-radius: 10px; padding: .75rem 1rem; margin: .75rem 0; }
@@ -119,9 +118,13 @@
       <button class="btn secondary" id="btn-demo">Charger des données de DÉMONSTRATION</button>
       <button class="btn danger" id="btn-clear-demo" hidden>Effacer la démo</button>
     </div>
+    <div class="actions">
+      <button class="btn secondary" id="btn-del-lots" hidden>Supprimer la liste de lots</button>
+      <button class="btn secondary" id="btn-del-achats" hidden>Supprimer les achats</button>
+    </div>
     <input type="file" id="file-lots" accept=".csv,text/csv" hidden>
     <input type="file" id="file-achats" accept=".csv,text/csv" hidden>
-    <p id="lock-note" class="msg info" hidden>Le tirage est fait : l'import est verrouillé sur cet ordinateur.</p>
+    <p id="lock-note" class="msg info" hidden>Le tirage est fait : l'import est verrouillé sur cet ordinateur. Pour refaire un tirage de test : onglet Bar, « Supprimer le résultat ».</p>
     <div id="msg-lots"></div>
     <div id="msg-achats"></div>
     <div id="recap-prep"></div>
@@ -158,8 +161,9 @@
     </div>
     <input type="file" id="file-result" accept=".csv,text/csv" hidden>
     <div id="msg-result"></div>
-    <div class="danger-zone">
-      <button class="btn discreet" id="btn-reset-real" hidden>Effacer ce tirage de cet ordinateur</button>
+    <div class="danger-zone actions">
+      <button class="btn danger" id="btn-delete-result" hidden>Supprimer le résultat</button>
+      <button class="btn danger" id="btn-wipe-all" hidden>Tout effacer</button>
     </div>
   </section>
 </main>

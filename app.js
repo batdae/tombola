@@ -282,7 +282,8 @@
     $('btn-redownload').hidden = !record;
     $('btn-print-lot').disabled = !record;
     $('btn-print-ticket').disabled = !record;
-    $('btn-reset-real').hidden = !((record && !record.demo) || recordCorrupt);
+    $('btn-delete-result').hidden = !isLocked();
+    $('btn-wipe-all').hidden = !isLocked();
   }
 
   function renderDraw() {
@@ -301,6 +302,8 @@
     ['btn-import-lots', 'btn-import-achats', 'btn-demo'].forEach(id => { $(id).disabled = locked; });
     $('lock-note').hidden = !locked;
     $('btn-clear-demo').hidden = !showsDemo();
+    $('btn-del-lots').hidden = locked || !prep.lots;
+    $('btn-del-achats').hidden = locked || !prep.achats;
     renderImportStatus();
     renderRecap('recap-prep');
     renderRecap('recap-tirage');
@@ -533,31 +536,64 @@
     } else apply();
   }));
 
-  $('btn-reset-real').addEventListener('click', () => {
+  // Supprime le résultat (et, si alsoPrep, les imports) puis revient à la Préparation.
+  function eraseResult(alsoPrep) {
+    const r = storageRemove(KEY_RECORD);
+    if (!r.ok) alertStorage('effacement du tirage', r.error);
+    if (alsoPrep) {
+      const p = storageRemove(KEY_PREP);
+      if (!p.ok) alertStorage('effacement des imports', p.error);
+      prep = { lots: null, achats: null, demo: false };
+      delete $('msg-lots').dataset.keep;
+      delete $('msg-achats').dataset.keep;
+    }
+    setRecord(null);
+    saveFailed = false;
+    drawing = false;
+    clear($('search-results'));
+    $('search-summary').textContent = '';
+    clear($('search-message'));
+    clear($('draw-status'));
+    render();
+    showTab('prep');
+  }
+
+  function confirmErase(title, okLabel, alsoPrep) {
     openDialog({
-      title: 'Effacer ce tirage de cet ordinateur',
+      title,
       body: [
-        el('p', { text: 'Vérifiez d\'abord que le fichier CSV du résultat a bien été téléchargé et qu\'il s\'ouvre : ' +
-          'après effacement, ce tirage ne sera plus consultable ici.' }),
+        el('p', { text: 'Vérifie que le CSV du résultat a bien été téléchargé : ce tirage sera perdu sur cet ordinateur.' }),
         el('p', { text: 'Tapez EFFACER pour confirmer.' })
       ],
-      okLabel: 'Effacer définitivement',
+      okLabel,
       danger: true,
       requireText: 'EFFACER',
+      onOk: () => eraseResult(alsoPrep)
+    });
+  }
+
+  $('btn-delete-result').addEventListener('click', () => confirmErase('Supprimer le résultat', 'Supprimer le résultat', false));
+  $('btn-wipe-all').addEventListener('click', () => confirmErase('Tout effacer (lots, achats et résultat)', 'Tout effacer', true));
+
+  function deletePrep(kind) {
+    if (isLocked()) return;
+    openDialog({
+      title: kind === 'lots' ? 'Supprimer la liste de lots ?' : 'Supprimer les achats ?',
+      body: [el('p', { text: kind === 'lots' ? 'Les lots importés seront retirés de cet ordinateur.' : 'Les achats importés seront retirés de cet ordinateur.' })],
+      okLabel: 'Oui, supprimer',
+      danger: true,
       onOk: () => {
-        const r = storageRemove(KEY_RECORD);
-        if (!r.ok) alertStorage('effacement du tirage', r.error);
-        setRecord(null);
-        saveFailed = false;
-        drawing = false;
-        clear($('search-results'));
-        $('search-summary').textContent = '';
-        clear($('draw-status'));
+        prep[kind] = null;
+        if (!prep.lots && !prep.achats) prep.demo = false;
+        delete $(kind === 'lots' ? 'msg-lots' : 'msg-achats').dataset.keep;
+        savePrep();
         render();
-        showTab('prep');
       }
     });
-  });
+  }
+
+  $('btn-del-lots').addEventListener('click', () => deletePrep('lots'));
+  $('btn-del-achats').addEventListener('click', () => deletePrep('achats'));
 
   function printList(byTicket) {
     if (!record) return;
