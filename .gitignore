@@ -1,0 +1,7 @@
+# Aucune vraie donnée (noms d'acheteurs, résultats) ne doit entrer dans le dépôt public.
+*.csv
+*.json
+!modeles/*.csv
+!modeles/*.json
+
+__pycache__/
