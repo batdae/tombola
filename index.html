@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tombola NAM-IP</title>
+<style>
+  :root {
+    --bg: #f6f4ef;
+    --surface: #ffffff;
+    --text: #1c1b19;
+    --muted: #5d5a53;
+    --border: #d6d1c4;
+    --accent: #1d4e89;
+    --accent-text: #ffffff;
+    --win-bg: #e3f6e3;
+    --win-border: #1f8a3a;
+    --win-text: #0f5223;
+    --lose-bg: #f1efea;
+    --absent-bg: #fff3d6;
+    --absent-border: #b07a00;
+    --danger: #b3261e;
+    --danger-bg: #fde7e5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161614; --surface: #22211e; --text: #f2efe8; --muted: #b5b0a5; --border: #45423b;
+      --accent: #6fa3e8; --accent-text: #0d1b2e;
+      --win-bg: #10351c; --win-border: #4cc46c; --win-text: #b9f2c8;
+      --lose-bg: #2a2925; --absent-bg: #3a2f12; --absent-border: #e0b041;
+      --danger: #ff8a80; --danger-bg: #3d1714;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 18px/1.45 system-ui, "Segoe UI", Roboto, sans-serif; }
+  .demo-banner { position: sticky; top: 0; z-index: 10; background: #c4161c; color: #fff; text-align: center;
+    font-weight: 800; font-size: 1.4rem; padding: .5rem 1rem; letter-spacing: .02em; }
+  header { padding: 1rem 16px .5rem; max-width: 1100px; margin: 0 auto; }
+  h1 { margin: 0 0 .75rem; font-size: 1.8rem; }
+  h2 { font-size: 1.5rem; margin: .5rem 0 1rem; }
+  .tabs { display: flex; gap: .5rem; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 1.2rem; font-weight: 700; padding: .7rem 1.4rem; border: 2px solid var(--border);
+    background: var(--surface); color: var(--text); border-radius: 10px 10px 0 0; cursor: pointer; }
+  .tab[aria-selected="true"] { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  main { max-width: 1100px; margin: 0 auto; padding: 0 16px 3rem; }
+  .panel { background: var(--surface); color: var(--text); border: 2px solid var(--border); border-radius: 0 12px 12px 12px; padding: 1.25rem; }
+  .actions { display: flex; flex-wrap: wrap; gap: .75rem; margin: 1rem 0; }
+  button.btn { font: inherit; font-weight: 700; padding: .8rem 1.2rem; border-radius: 10px; border: 2px solid var(--accent);
+    background: var(--accent); color: var(--accent-text); cursor: pointer; }
+  button.btn.secondary { background: transparent; color: var(--accent); }
+  button.btn.danger { background: #b3261e; border-color: #b3261e; color: #fff; }
+  button.btn.discreet { background: transparent; border-color: var(--border); color: var(--muted); font-weight: 400; font-size: .9rem; }
+  button.btn:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-huge { font-size: 2rem !important; padding: 1.2rem 2.5rem !important; }
+  .msg { border-radius: 10px; padding: .75rem 1rem; margin: .75rem 0; }
+  .msg h3 { margin: 0 0 .25rem; font-size: 1.1rem; }
+  .msg ul { margin: .25rem 0 0; padding-left: 1.25rem; }
+  .msg.error { background: var(--danger-bg); border: 2px solid var(--danger); }
+  .msg.info { background: var(--lose-bg); color: var(--text); border: 1px solid var(--border); }
+  .msg.ok { background: var(--win-bg); border: 2px solid var(--win-border); }
+  .alert-big { font-size: 1.4rem; font-weight: 700; background: var(--danger-bg); border: 3px solid var(--danger); color: var(--text);
+    border-radius: 12px; padding: 1rem 1.25rem; margin: 1rem 0; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .75rem; }
+  .stat { border: 2px solid var(--border); border-radius: 12px; padding: .75rem; text-align: center; }
+  .stat b { display: block; font-size: 2.6rem; line-height: 1.1; }
+  .mode { font-size: 1.3rem; font-weight: 700; margin: 1rem 0 .25rem; }
+  details { margin: .75rem 0; }
+  summary { cursor: pointer; font-weight: 700; font-size: 1.1rem; padding: .4rem 0; }
+  .table-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 1rem; }
+  th, td { border: 1px solid var(--border); padding: .35rem .6rem; text-align: left; vertical-align: top; }
+  th { background: var(--lose-bg); color: var(--text); }
+  #search-form { display: flex; flex-wrap: wrap; gap: .75rem; align-items: stretch; }
+  #search-form label { flex-basis: 100%; font-size: 1.3rem; font-weight: 700; }
+  #search { flex: 1 1 320px; min-width: 0; font: inherit; font-size: 3rem; font-weight: 700; padding: .5rem 1rem;
+    border: 3px solid var(--accent); border-radius: 12px; background: var(--bg); color: var(--text); }
+  #search-summary { font-size: 1.4rem; font-weight: 700; margin: 1rem 0 .5rem; }
+  #search-results { list-style: none; padding: 0; margin: 0; display: grid; gap: .4rem; }
+  #search-results li { font-size: 1.5rem; padding: .6rem 1rem; border-radius: 10px; background: var(--lose-bg); color: var(--text); }
+  #search-results li.win { background: var(--win-bg); border: 3px solid var(--win-border); color: var(--win-text); font-weight: 800; font-size: 1.9rem; }
+  #search-results li.absent { background: var(--absent-bg); border: 2px dashed var(--absent-border); }
+  .muted { color: var(--muted); }
+  .danger-zone { margin-top: 2.5rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+  dialog { border: 3px solid var(--accent); border-radius: 14px; padding: 1.5rem; max-width: min(640px, calc(100vw - 32px));
+    background: var(--surface); color: var(--text); font-size: 1.2rem; }
+  dialog::backdrop { background: rgba(0, 0, 0, .55); }
+  dialog input { font: inherit; font-size: 1.5rem; padding: .4rem .6rem; width: 100%; margin: .5rem 0; }
+  #print-area { display: none; }
+  @media print {
+    body { background: #fff; color: #000; font-size: 11pt; }
+    body > *:not(#print-area) { display: none !important; }
+    #print-area { display: block; }
+    #print-area table { font-size: 10pt; }
+    #print-area th, #print-area td { border: 1px solid #000; }
+    #print-area tr { break-inside: avoid; }
+    .print-demo { color: #c4161c; font-weight: 800; font-size: 16pt; }
+  }
+</style>
+</head>
+<body>
+<div id="demo-banner" class="demo-banner" hidden>DÉMONSTRATION — résultat non valable</div>
+<header>
+  <h1>Tombola des 10 ans du NAM-IP</h1>
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" data-tab="prep" id="tabbtn-prep">1. Préparation</button>
+    <button class="tab" role="tab" data-tab="tirage" id="tabbtn-tirage">2. Tirage</button>
+    <button class="tab" role="tab" data-tab="bar" id="tabbtn-bar">3. Bar</button>
+  </nav>
+</header>
+<main>
+  <div id="alerts"></div>
+
+  <section class="panel" id="tab-prep" role="tabpanel">
+    <h2>Préparation</h2>
+    <div class="actions">
+      <button class="btn" id="btn-import-lots">Importer les lots</button>
+      <button class="btn" id="btn-import-achats">Importer les achats</button>
+      <button class="btn secondary" id="btn-modeles">Télécharger les modèles CSV</button>
+      <button class="btn secondary" id="btn-demo">Charger des données de DÉMONSTRATION</button>
+      <button class="btn danger" id="btn-clear-demo" hidden>Effacer la démo</button>
+    </div>
+    <input type="file" id="file-lots" accept=".csv,text/csv" hidden>
+    <input type="file" id="file-achats" accept=".csv,text/csv" hidden>
+    <p id="lock-note" class="msg info" hidden>Le tirage est fait : l'import est verrouillé sur cet ordinateur.</p>
+    <div id="msg-lots"></div>
+    <div id="msg-achats"></div>
+    <div id="recap-prep"></div>
+    <details><summary>Aperçu des lots</summary><div class="table-wrap" id="preview-lots"></div></details>
+    <details><summary>Aperçu des achats</summary><div class="table-wrap" id="preview-achats"></div></details>
+  </section>
+
+  <section class="panel" id="tab-tirage" role="tabpanel" hidden>
+    <h2>Tirage</h2>
+    <div id="recap-tirage"></div>
+    <div class="actions">
+      <button class="btn btn-huge" id="btn-draw">Tirer au sort</button>
+    </div>
+    <p id="draw-hint" class="muted"></p>
+    <div id="draw-status"></div>
+  </section>
+
+  <section class="panel" id="tab-bar" role="tabpanel" hidden>
+    <h2>Bar — vérifier un ticket</h2>
+    <div id="bar-info"></div>
+    <form id="search-form" autocomplete="off">
+      <label for="search">Numéro de ticket ou plage (ex. 7 ou 5-10)</label>
+      <input id="search" type="text" enterkeyhint="search" spellcheck="false">
+      <button class="btn btn-huge" type="submit" id="btn-search">Chercher</button>
+    </form>
+    <div id="search-summary" aria-live="polite"></div>
+    <div id="search-message"></div>
+    <ol id="search-results"></ol>
+    <div class="actions">
+      <button class="btn" id="btn-redownload" hidden>Retélécharger le résultat (CSV)</button>
+      <button class="btn secondary" id="btn-import-result">Importer un résultat</button>
+      <button class="btn secondary" id="btn-print-lot">Imprimer la liste (par lot)</button>
+      <button class="btn secondary" id="btn-print-ticket">Imprimer la liste (par ticket)</button>
+    </div>
+    <input type="file" id="file-result" accept=".csv,text/csv" hidden>
+    <div id="msg-result"></div>
+    <div class="danger-zone">
+      <button class="btn discreet" id="btn-reset-real" hidden>Effacer ce tirage de cet ordinateur</button>
+    </div>
+  </section>
+</main>
+
+<div id="print-area"></div>
+
+<dialog id="dlg">
+  <h2 id="dlg-title"></h2>
+  <div id="dlg-body"></div>
+  <input id="dlg-input" type="text" autocomplete="off" hidden>
+  <div class="actions">
+    <button class="btn" id="dlg-ok"></button>
+    <button class="btn secondary" id="dlg-cancel">Annuler</button>
+  </div>
+</dialog>
+
+<script src="engine.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
