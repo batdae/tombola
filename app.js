@@ -270,9 +270,8 @@
       info.appendChild(msgBox('error', 'Le tirage enregistré sur cet ordinateur est illisible. Importez le CSV du résultat.', recordCorrupt));
     }
     if (record) {
-      const d = new Date(record.date_tirage);
       info.appendChild(el('p', { class: 'msg info' },
-        'Tirage ' + record.tirage_id + ' du ' + d.toLocaleString('fr-BE') + ' — ' + record.attributions.length + ' lot(s) attribué(s)' +
+        'Tirage ' + record.tirage_id + ' du ' + E.displayDate(record) + ' — ' + record.attributions.length + ' lot(s) attribué(s)' +
         (record.origine === 'import' ? ' — consultation d\'un résultat importé.' : '.')));
     } else if (!recordCorrupt) {
       info.appendChild(msgBox('info', 'Aucun tirage sur cet ordinateur : faites le tirage (onglet 2) ou importez un résultat.'));
@@ -562,7 +561,7 @@
     openDialog({
       title,
       body: [
-        el('p', { text: 'Vérifie que le CSV du résultat a bien été téléchargé : ce tirage sera perdu sur cet ordinateur.' }),
+        el('p', { text: 'Vérifiez que le CSV du résultat a bien été téléchargé : ce tirage sera perdu sur cet ordinateur.' }),
         el('p', { text: 'Tapez EFFACER pour confirmer.' })
       ],
       okLabel,
@@ -598,10 +597,9 @@
   function printList(byTicket) {
     if (!record) return;
     const area = clear($('print-area'));
-    const d = new Date(record.date_tirage);
     if (record.demo) area.appendChild(el('p', { class: 'print-demo', text: 'DÉMONSTRATION — résultat non valable' }));
     area.appendChild(el('h2', { text: 'Tombola des 10 ans du NAM-IP — liste des gagnants (' + (byTicket ? 'par ticket' : 'par lot') + ')' }));
-    area.appendChild(el('p', { text: 'Tirage ' + record.tirage_id + ' du ' + d.toLocaleString('fr-BE') }));
+    area.appendChild(el('p', { text: 'Tirage ' + record.tirage_id + ' du ' + E.displayDate(record) }));
     const nameOf = t => index.buyers.get(index.owner.get(t)).nom;
     let rows;
     if (byTicket) {

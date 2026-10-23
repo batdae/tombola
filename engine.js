@@ -15,6 +15,8 @@
   // Garde-fou mémoire : une plage aberrante (ex. 1–1000000000) ne doit pas figer le navigateur.
   const MAX_TICKETS = 1000000;
   const SEARCH_LIMIT = 500;
+  const ISO_DATE = /^\d{4}-\d{2}-\d{2}T/;
+  const LOCAL_DATE = /^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2}):(\d{2})$/;
 
   const LOTS_HEADER = ['lot_id', 'description'];
   const ACHATS_HEADER = ['acheteur_id', 'nom', 'ticket_debut', 'ticket_fin'];
@@ -402,7 +404,10 @@
     if (rec.format !== FORMAT) errs.push('Format de résultat inconnu.');
     if (rec.version_algo !== ALGO_VERSION) errs.push('Version d\'algorithme « ' + rec.version_algo + ' » inconnue (attendu ' + ALGO_VERSION + ').');
     if (typeof rec.tirage_id !== 'string' || rec.tirage_id === '') errs.push('tirage_id manquant.');
-    if (typeof rec.date_tirage !== 'string' || isNaN(Date.parse(rec.date_tirage))) errs.push('date_tirage invalide.');
+    // Un tirage local garde sa date ISO ; un résultat importé garde le texte du fichier (format local ou ISO ancien).
+    const isIso = typeof rec.date_tirage === 'string' && ISO_DATE.test(rec.date_tirage) && !isNaN(Date.parse(rec.date_tirage));
+    const isLocal = typeof rec.date_tirage === 'string' && LOCAL_DATE.test(rec.date_tirage);
+    if (!(isIso || (rec.origine === 'import' && isLocal))) errs.push('date_tirage « ' + rec.date_tirage + ' » invalide.');
     if (rec.mode !== MODE_GARANTIE && rec.mode !== MODE_CLASSIQUE) errs.push('Mode « ' + rec.mode + ' » inconnu.');
     if (!Array.isArray(rec.lots) || !Array.isArray(rec.achats) || !Array.isArray(rec.attributions)) {
       errs.push('Structure du résultat incomplète.');
@@ -461,7 +466,7 @@
 
   function exportResultCSV(rec) {
     const idx = buildIndex(rec);
-    const meta = [rec.tirage_id, rec.date_tirage, rec.mode, rec.version_algo, rec.demo ? DEMO_VALUE : NON_DEMO_VALUE];
+    const meta = [rec.tirage_id, displayDate(rec), rec.mode, rec.version_algo, rec.demo ? DEMO_VALUE : NON_DEMO_VALUE];
     const rows = [RESULT_HEADER];
     idx.tickets.forEach(t => {
       const b = idx.buyers.get(idx.owner.get(t));
@@ -475,10 +480,23 @@
 
   function pad2(n) { return String(n).padStart(2, '0'); }
 
+  // Heure locale du PC qui a fait le tirage, ex. « 23/10/2026 11:40:24 ».
+  function formatLocalDate(iso) {
+    const d = new Date(iso);
+    return pad2(d.getDate()) + '/' + pad2(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' +
+      pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' + pad2(d.getSeconds());
+  }
+
+  // Date affichée et exportée. Un résultat importé garde son texte tel quel : aucune
+  // reconversion qui le décalerait selon le fuseau du PC qui importe.
+  function displayDate(rec) {
+    return rec.origine === 'import' ? rec.date_tirage : formatLocalDate(rec.date_tirage);
+  }
+
   function resultFileName(rec) {
-    const d = new Date(rec.date_tirage);
-    const name = 'tombola_resultat_' + d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) +
-      '_' + pad2(d.getHours()) + '-' + pad2(d.getMinutes()) + '-' + pad2(d.getSeconds()) + '.csv';
+    let m = LOCAL_DATE.exec(displayDate(rec));
+    if (!m) m = LOCAL_DATE.exec(formatLocalDate(rec.date_tirage));
+    const name = 'tombola_resultat_' + m[3] + '-' + m[2] + '-' + m[1] + '_' + m[4] + '-' + m[5] + '-' + m[6] + '.csv';
     return rec.demo ? 'DEMO_' + name : name;
   }
 
@@ -620,7 +638,7 @@
     cryptoAvailable, cryptoRng, randomInt, shuffle,
     parseCSV, parseLots, parseAchats, validateLotRows, validateAchatRows, checkData, computeGaps,
     buildRegistry, summarize, modeText, draw, createRecord, checkRecord, buildIndex,
-    exportResultCSV, importResultCSV, resultFileName, parseQuery, search, fmtRange
+    exportResultCSV, importResultCSV, resultFileName, displayDate, parseQuery, search, fmtRange
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   globalThis.TombolaEngine = api;

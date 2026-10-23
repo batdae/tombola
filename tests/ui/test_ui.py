@@ -3,6 +3,7 @@
 Usage : python tests/ui/test_ui.py <dossier_de_sortie>
 (le dossier reçoit les CSV téléchargés ; aucune donnée n'est écrite dans le dépôt)
 """
+import re
 import sys
 from pathlib import Path
 from playwright.sync_api import sync_playwright
@@ -72,7 +73,14 @@ with sync_playwright() as p:
     check("DÉMONSTRATION — résultat non valable" in text, "Mention DÉMONSTRATION dans le CSV")
     tid = stored_id(page)
     check(tid and tid.startswith("DEMO-"), "Tirage enregistré dans localStorage : " + str(tid))
-    check(page.is_visible("#tab-bar"), "Vue Bar affichée après le tirage")
+    check(page.is_visible("#tab-bar"), "Vue Vérification affichée après le tirage")
+    check(page.inner_text("#tabbtn-bar") == "3. Vérification", "Libellé de l'onglet : 3. Vérification")
+    check(page.inner_text("#tab-bar h2") == "Vérification d'un ticket", "Titre : Vérification d'un ticket")
+    check("Bar" not in page.inner_text("body"), "Aucune mention visible de « Bar »")
+    csv_date = lines[1].split(";")[1]
+    check(re.fullmatch(r"\d{2}/\d{2}/\d{4} \d{2}:\d{2}:\d{2}", csv_date) is not None, "Date du CSV en heure locale : " + csv_date)
+    check(all(l.split(";")[1] == csv_date for l in lines[1:]), "Même date sur chaque ligne du CSV")
+    check(csv_date in page.inner_text("#bar-info"), "Date affichée identique à celle du CSV")
     check(page.evaluate("document.activeElement.id") == "search", "Focus automatique sur la recherche")
     res1, summary1 = search(page, "3-8")
     check(len(res1) == 6 and res1[0].startswith("Ticket 3 ") and res1[-1].startswith("Ticket 8 "), "Recherche 3-8 : 6 lignes, bornes incluses")
@@ -120,6 +128,7 @@ with sync_playwright() as p:
     c.set_input_files("#file-result", str(csv_path))
     c.wait_for_timeout(500)
     check(stored_id(c) == tid, "Réimport : même tirage_id")
+    check(csv_date in c.inner_text("#bar-info"), "Réimport : date affichée telle quelle (" + csv_date + ")")
     res3, _ = search(c, "3-8")
     check(res3 == res1, "Réimport : même résultat pour 3-8")
     check(c.is_visible("#demo-banner"), "Réimport d'une démo : bandeau visible")
@@ -166,7 +175,8 @@ with sync_playwright() as p:
     check(r.is_hidden("#btn-del-lots") and r.is_hidden("#btn-del-achats"), "Après tirage : boutons de suppression des imports masqués")
     r.click("#btn-delete-result")
     check(r.is_disabled("#dlg-ok"), "Supprimer le résultat : bouton inactif tant qu'EFFACER n'est pas tapé")
-    check("Vérifie que le CSV du résultat a bien été téléchargé" in r.inner_text("#dlg-body"), "Supprimer le résultat : rappel du CSV affiché")
+    check("Vérifiez que le CSV du résultat a bien été téléchargé : ce tirage sera perdu sur cet ordinateur." in r.inner_text("#dlg-body"),
+          "Supprimer le résultat : rappel du CSV affiché (vouvoiement)")
     r.fill("#dlg-input", "effacer")
     check(r.is_disabled("#dlg-ok"), "Supprimer le résultat : « effacer » en minuscules refusé")
     r.fill("#dlg-input", "EFFACER")

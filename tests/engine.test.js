@@ -276,9 +276,47 @@ test('Export puis réimport : attributions identiques, apostrophe anti-formule r
     { acheteur_id: 'B2', nom: 'Zoé', debut: 5, fin: 5 },
     { acheteur_id: '=A1', nom: '-Michel', debut: 9, fin: 9 }
   ]);
-  ['tirage_id', 'date_tirage', 'mode', 'version_algo', 'demo'].forEach(k => assert.equal(back.record[k], rec[k], k));
+  ['tirage_id', 'mode', 'version_algo', 'demo'].forEach(k => assert.equal(back.record[k], rec[k], k));
+  assert.equal(back.record.date_tirage, E.displayDate(rec));
   assert.equal(E.exportResultCSV(back.record), csv);
   assert.match(E.resultFileName(rec), /^tombola_resultat_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.csv$/);
+});
+
+test('Date exportée en heure locale lisible, conservée telle quelle au réimport', () => {
+  const now = new Date('2026-10-23T09:40:24.693Z');
+  const rec = E.createRecord({ lots: makeLots(3), achats: makeAchats(2, 5), rng: seeded(8), now });
+  assert.equal(rec.date_tirage, '2026-10-23T09:40:24.693Z', 'ISO conservée en interne');
+  const p2 = n => String(n).padStart(2, '0');
+  const expected = p2(now.getDate()) + '/' + p2(now.getMonth() + 1) + '/' + now.getFullYear() + ' ' +
+    p2(now.getHours()) + ':' + p2(now.getMinutes()) + ':' + p2(now.getSeconds());
+  assert.equal(E.displayDate(rec), expected);
+  const csv = E.exportResultCSV(rec);
+  const dates = csv.slice(1).trim().split('\r\n').slice(1).map(l => l.split(';')[1]);
+  dates.forEach(d => assert.equal(d, expected));
+  assert.ok(!csv.includes('T09:40:24'), 'pas de date ISO dans le CSV');
+  const fileStamp = expected.replace(/^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2}):(\d{2})$/, '$3-$2-$1_$4-$5-$6');
+  assert.equal(E.resultFileName(rec), 'tombola_resultat_' + fileStamp + '.csv');
+
+  // Nouveau format : texte gardé tel quel, même si on le fabrique dans un autre fuseau.
+  const shifted = csv.split(expected).join('01/02/2026 23:59:58');
+  const back = E.importResultCSV(shifted);
+  assert.ok(back.ok, errorText(back));
+  assert.equal(back.record.date_tirage, '01/02/2026 23:59:58');
+  assert.equal(E.displayDate(back.record), '01/02/2026 23:59:58');
+  assert.equal(E.resultFileName(back.record), 'tombola_resultat_2026-02-01_23-59-58.csv');
+  assert.equal(E.exportResultCSV(back.record), shifted);
+
+  // Ancien format ISO : accepté et conservé tel quel.
+  const old = csv.split(expected).join('2026-10-23T09:40:24.693Z');
+  const backOld = E.importResultCSV(old);
+  assert.ok(backOld.ok, errorText(backOld));
+  assert.equal(backOld.record.date_tirage, '2026-10-23T09:40:24.693Z');
+  assert.equal(E.displayDate(backOld.record), '2026-10-23T09:40:24.693Z');
+  assert.equal(E.exportResultCSV(backOld.record), old);
+  assert.match(E.resultFileName(backOld.record), /^tombola_resultat_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.csv$/);
+
+  // Date illisible : refusée.
+  assert.match(errorText(E.importResultCSV(csv.split(expected).join('hier soir'))), /date_tirage « hier soir » invalide/);
 });
 
 test('Export démo : marqué DÉMONSTRATION dans le CSV et le nom de fichier', () => {
